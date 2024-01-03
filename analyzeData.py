@@ -90,13 +90,17 @@ if __name__ == '__main__':
         channel_id_to_channel[x['channel_id']] = x['channel']
         channel_id_frequency[x['channel_id']] += 1
         channel_id_time_watched[x['channel_id']] += x['duration_seconds']
+        total_video_length += x['duration_seconds']
+
+        temporary_tag_cache = set() # to prevent multiple additions from the same video
         for tag in x['tags']:
             for word in tag.lower().split(' '):
-                tag_keywords[word] += 1
-        total_video_length += x['duration_seconds']
+                temporary_tag_cache.add(word)
+        for word in temporary_tag_cache:
+            tag_keywords[word] += 1
     
     # Remove some common words
-    common_words = ['the', 'of', 'to', 'how', '2', '3', 'a', 'is', 'and']
+    common_words = ['the', 'of', 'to', 'how', '2', '3', 'a', 'is', 'and', 'new', 'in', 'on']
     for cword in common_words:
         del tag_keywords[cword]
 
@@ -126,7 +130,6 @@ if __name__ == '__main__':
         in channel_id_time_watched.most_common(20)
     ]
     print(tabulate(most_watched_by_time, headers=['Most Watched (by time)', 'Time Watched (hr)', 'Videos']))
-
 
     top_tags = [
         (
