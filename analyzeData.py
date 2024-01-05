@@ -211,12 +211,17 @@ if __name__ == '__main__':
             except TypeError:
                 print(x)
                 raise
+
+        fig, ax = plt.subplots(figsize=(10, 5))
         seaborn.regplot(
             x=sorted(daily_binned_time.keys()),
             y=[y / 3600 / 7 for y in daily_binned_time.values()],
+            ax=ax,
         )
+        
         plt.xlabel('Week of year')
         plt.xticks(rotation=90)
         plt.ylabel('Average hours watched per day')
         plt.title('Average hours watched per day by week of year')
         pdf.savefig(bbox_inches='tight')
+        plt.close()
