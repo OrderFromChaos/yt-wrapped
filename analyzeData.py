@@ -1,5 +1,6 @@
 import json
 from collections import Counter
+from string import ascii_lowercase
 
 import matplotlib.pyplot as plt
 import pendulum
@@ -24,6 +25,10 @@ if __name__ == '__main__':
         'hbomberguy',
         'Kyle Hess',
     ])
+    COMMON_WORDS_FOR_TAG_FILTER = [
+        'the', 'of', 'to', 'how', '2', '3', 'a', 'is', 'and', 'new', 'in', 'on',
+        'i', 'for', 'are', 'can', 'at',
+    ]
 
     with open('watch_history.json', 'r') as f:
         data = json.load(f)
@@ -85,6 +90,7 @@ if __name__ == '__main__':
     channel_id_time_watched = Counter()
     total_video_length = 0
     tag_keywords = Counter()
+    title_keywords = Counter()
 
     for x in data:
         channel_id_to_channel[x['channel_id']] = x['channel']
@@ -92,6 +98,17 @@ if __name__ == '__main__':
         channel_id_time_watched[x['channel_id']] += x['duration_seconds']
         total_video_length += x['duration_seconds']
 
+        # Title keywords
+        temporary_title_cache = set() # to prevent multiple additions from the same video
+        valid_chars = set(ascii_lowercase + ' ')
+        title = ''.join([c for c in x['title'].lower() if c in valid_chars])
+        for word in title.split(' '):
+            if word != '':
+                temporary_title_cache.add(word)
+        for word in temporary_title_cache:
+            title_keywords[word] += 1
+
+        # Video tag keywords
         temporary_tag_cache = set() # to prevent multiple additions from the same video
         for tag in x['tags']:
             for word in tag.lower().split(' '):
@@ -100,9 +117,11 @@ if __name__ == '__main__':
             tag_keywords[word] += 1
     
     # Remove some common words
-    common_words = ['the', 'of', 'to', 'how', '2', '3', 'a', 'is', 'and', 'new', 'in', 'on']
-    for cword in common_words:
-        del tag_keywords[cword]
+    for cword in COMMON_WORDS_FOR_TAG_FILTER:
+        if cword in tag_keywords:
+            del tag_keywords[cword]
+        if cword in title_keywords:
+            del title_keywords[cword]
 
     hours_watched = round(total_video_length / 3600, 2)
     number_of_days_in_duration = (RANGE[1] - RANGE[0]).in_days()
@@ -112,7 +131,7 @@ if __name__ == '__main__':
     most_watched_by_count = [
         (
             colored(channel_id_to_channel[channel_id], 'cyan'),
-            colored(frequency, 'green'),
+            colored(frequency, 'yellow'),
             colored(round(channel_id_time_watched[channel_id] / 3600, 2), 'green'),
         )
         for channel_id, frequency
@@ -123,7 +142,7 @@ if __name__ == '__main__':
     most_watched_by_time = [
         (
             colored(channel_id_to_channel[channel_id], 'cyan'),
-            colored(round(frequency / 3600, 2), 'green'),
+            colored(round(frequency / 3600, 2), 'yellow'),
             colored(channel_id_frequency[channel_id], 'green'),
         )
         for channel_id, frequency
@@ -131,16 +150,20 @@ if __name__ == '__main__':
     ]
     print(tabulate(most_watched_by_time, headers=['Most Watched (by time)', 'Time Watched (hr)', 'Videos']))
 
-    top_tags = [
+    top_words = [
         (
-            colored(tag, 'cyan'),
-            colored(frequency, 'green'),
+            colored(tag_group[0], 'cyan'),
+            colored(tag_group[1], 'green'),
+            colored(title_group[0], 'cyan'),
+            colored(title_group[1], 'green'),
         )
-        for tag, frequency
-        in tag_keywords.most_common(20)
+        for tag_group, title_group
+        in zip(
+            tag_keywords.most_common(20),
+            title_keywords.most_common(20),
+        )
     ]
-    print(tabulate(top_tags, headers=['Tag', 'Frequency']))
-
+    print(tabulate(top_words, headers=['Video Tag', 'Frequency', 'Title Word', 'Frequency']))
 
     # Longest videos
     data.sort(key=lambda x: x['duration_seconds'], reverse=True)
@@ -176,3 +199,11 @@ if __name__ == '__main__':
         in duplicated.most_common(20)
     ]
     print(tabulate(duplicated_videos, headers=['Most rewatched video titles', 'Frequency', 'Channel']))
+
+    # with PdfPages('charts.pdf') as pdf:
+    # print('Generating PDF with charts...')
+
+    # # Watch time by day
+    # watch_time_by_day = Counter()
+    # for x in data:
+    #     watch_time_by_day[x['when_watched'].to_date_string()] += x['duration_seconds']
