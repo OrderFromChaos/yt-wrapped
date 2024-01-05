@@ -7,4 +7,4 @@
 3. Ensure you are running at least Python 3.10, or if not, replace `@dataclass(slots=True)` with `@dataclass`
 4. `pip install -r requirements.txt`
 5. `python processData.py` - this will compile all your watch history into `watch_history.json`
-6. To view tables/generate plots, run `python analyzeData.py`
+6. To view tables/generate plots, run `python analyzeData.py`. This will output a bunch of tables in terminal and a pdf, `charts.pdf`.

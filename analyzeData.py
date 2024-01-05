@@ -200,10 +200,23 @@ if __name__ == '__main__':
     ]
     print(tabulate(duplicated_videos, headers=['Most rewatched video titles', 'Frequency', 'Channel']))
 
-    # with PdfPages('charts.pdf') as pdf:
-    # print('Generating PDF with charts...')
+    with PdfPages('charts.pdf') as pdf:
+        print('Generating PDF with charts...')
 
-    # # Watch time by day
-    # watch_time_by_day = Counter()
-    # for x in data:
-    #     watch_time_by_day[x['when_watched'].to_date_string()] += x['duration_seconds']
+        # Watch time by week
+        daily_binned_time = Counter()
+        for x in data:
+            try:
+                daily_binned_time[x['when_watched'].week_of_year] += x['duration_seconds']
+            except TypeError:
+                print(x)
+                raise
+        seaborn.regplot(
+            x=sorted(daily_binned_time.keys()),
+            y=[y / 3600 / 7 for y in daily_binned_time.values()],
+        )
+        plt.xlabel('Week of year')
+        plt.xticks(rotation=90)
+        plt.ylabel('Average hours watched per day')
+        plt.title('Average hours watched per day by week of year')
+        pdf.savefig(bbox_inches='tight')
